@@ -1,0 +1,55 @@
+project(":example-module") {
+    configurations {
+        provided {
+            dependencies.all { dep ->
+                configurations.default.exclude group: dep.group, module: dep.name
+            }
+        }
+        compile.extendsFrom provided
+
+        runtime.exclude module: "spark-core_$scalaVersion"
+        runtime.exclude module: "spark-sql_$scalaVersion"
+        runtime.exclude module: "spark-yarn_$scalaVersion"
+        runtime.exclude module: "spark-hive_$scalaVersion"
+        runtime.exclude module: "spark-graphx_$scalaVersion"
+        runtime.exclude module: "spark-mllib_$scalaVersion"
+
+        /*slf4j-log4j12 and log4j-over-slf4j cant both be on classpath (each one diverts slft4j logging to log4j and vice versa, into infinite loop*/
+        //compile.exclude group: "org.slf4j", module: "slf4j-log4j12"
+        //compile.exclude group: "log4j", module: "log4j"
+    }
+
+    dependencies {
+        compile("org.apache.spark:spark-core_$scalaVersion:$spark")
+        compile("org.apache.spark:spark-sql_$scalaVersion:$spark")
+        compile("org.apache.spark:spark-yarn_$scalaVersion:$spark")
+        compile("org.apache.spark:spark-hive_$scalaVersion:$spark")
+        compile("org.apache.spark:spark-graphx_$scalaVersion:$spark")
+        compile("org.apache.spark:spark-mllib_$scalaVersion:$spark")
+
+        compile("org.typelevel:frameless-dataset_$scalaVersion:$frameless")
+
+        compile("ca.mrvisser:sealerate_2.11:0.0.6")
+
+        testCompile("junit:junit:$junit")
+        testCompile("com.holdenkarau:spark-testing-base_$scalaVersion:${spark}_$sparkTestingBase") {
+            //exclude module: 'slf4j-log4j12'
+            exclude module: 'commons-lang3'
+        }
+
+        testRuntime("org.apache.spark:spark-core_$scalaVersion:$spark")
+        testRuntime("org.apache.spark:spark-sql_$scalaVersion:$spark")
+        testRuntime("org.apache.spark:spark-yarn_$scalaVersion:$spark")
+        testRuntime("org.apache.spark:spark-hive_$scalaVersion:$spark")
+        testRuntime("org.apache.spark:spark-graphx_$scalaVersion:$spark")
+        testRuntime("org.apache.spark:spark-mllib_$scalaVersion:$spark")
+    }
+
+    tasks.withType(Test) {
+        maxParallelForks = 1
+        minHeapSize = "512M"
+        maxHeapSize = "4G"
+
+        jvmArgs = ["-Xmx4G", "-XX:+CMSClassUnloadingEnabled", "-XX:MetaspaceSize=2G"]
+    }
+}
